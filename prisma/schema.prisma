@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company Company?
+
+  @@index([email])
+  @@map("users")
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  logo      String?
+  email     String?
+  phone     String?
+  address   String?
+  country   String   @default("Pakistan")
+  currency  String   @default("PKR")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  incomes    Income[]
+  expenses   Expense[]
+  categories Category[]
+
+  @@index([userId])
+  @@map("companies")
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+}
+
+model Category {
+  id        String       @id @default(cuid())
+  companyId String
+  company   Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name      String
+  type      CategoryType
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  incomes  Income[]
+  expenses Expense[]
+
+  @@index([companyId])
+  @@index([companyId, type])
+  @@map("categories")
+}
+
+model Income {
+  id            String    @id @default(cuid())
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  date          DateTime  @default(now())
+  description   String
+  source        String
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  amount        Decimal   @db.Decimal(15, 2)
+  paymentMethod String    @default("Cash")
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([companyId, date])
+  @@index([categoryId])
+  @@map("income")
+}
+
+model Expense {
+  id            String    @id @default(cuid())
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  date          DateTime  @default(now())
+  description   String
+  vendor        String
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  amount        Decimal   @db.Decimal(15, 2)
+  paymentMethod String    @default("Cash")
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  attachments Attachment[]
+
+  @@index([companyId])
+  @@index([companyId, date])
+  @@index([categoryId])
+  @@map("expenses")
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  expenseId String
+  expense   Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  fileName  String
+  filePath  String
+  mimeType  String
+  size      Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([expenseId])
+  @@map("attachments")
+}
